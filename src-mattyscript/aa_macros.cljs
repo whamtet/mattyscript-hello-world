@@ -37,15 +37,21 @@
   )
 
 (defmacro defcomponent [name args & body]
-  `(~'class ~(with-meta (symbol (camelize name)) {:export true}) ~'UnmountingComponent
-            (~'fn ~'constructor [~'props]
-                  (~'super (~'+ ~(str name) ~'props.key)))
-            (~'fn ~'render []
-                  (~'let [
-                           ~'that ~'this
-                           ~args ~'this.props.args
-                           ]
-                         ~@(replace-derefs body)))))
+  (let [
+         lifecycle-method? #(and (coll? %) (= 'fn (first %)))
+         lifecycle-methods (filter lifecycle-method? body)
+         body (remove lifecycle-method? body)
+         ]
+    `(~'class ~(with-meta (symbol (camelize name)) {:export true}) ~'UnmountingComponent
+              (~'fn ~'constructor [~'props]
+                    (~'super (~'+ ~(str name) ~'props.key)))
+              ~@lifecycle-methods
+              (~'fn ~'render []
+                    (~'let [
+                             ~'that ~'this
+                             ~args ~'this.props.args
+                             ]
+                           ~@(replace-derefs body))))))
 
 (defmacro invoke-component [namez k & args]
   (assert (not (keyword? (first args))))
